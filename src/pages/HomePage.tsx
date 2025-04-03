@@ -12,7 +12,7 @@ const HomePage: React.FC = () => {
   const quickAccessItems = [
     {
       title: 'Chat Support',
-      description: 'Talk with our AI assistant about how you're feeling.',
+      description: "Talk with our AI assistant about how you're feeling.",
       icon: <MessageCircle className="h-6 w-6 text-lavender" />,
       path: '/chat'
     },
@@ -30,7 +30,7 @@ const HomePage: React.FC = () => {
     },
     {
       title: 'Support Forums',
-      description: 'Connect with others who understand what you're going through.',
+      description: "Connect with others who understand what you're going through.",
       icon: <Users className="h-6 w-6 text-lavender" />,
       path: '/forum'
     }
