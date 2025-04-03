@@ -1,15 +1,19 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import MoodTracker from '@/components/shared/MoodTracker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageCircle, BookOpen, Wind, Users } from 'lucide-react';
+import { MessageCircle, BookOpen, Wind, Users, LogOut, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { user, signOut } = useAuth();
+  const [userProfile, setUserProfile] = useState<{ display_name?: string } | null>(null);
   
   const quickAccessItems = [
     {
@@ -38,9 +42,73 @@ const HomePage: React.FC = () => {
     }
   ];
 
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) {
+        setUserProfile(null);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', user.id)
+          .single();
+          
+        if (error) throw error;
+        setUserProfile(data);
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+    
+    fetchUserProfile();
+  }, [user]);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    let greeting = '';
+    
+    if (hour < 12) greeting = 'Good morning';
+    else if (hour < 18) greeting = 'Good afternoon';
+    else greeting = 'Good evening';
+    
+    return `${greeting}, ${userProfile?.display_name || 'there'}`;
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4">
-      <h1 className="text-2xl md:text-3xl font-poppins font-semibold mb-6 text-sage">Welcome to CerebroSync</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl md:text-3xl font-poppins font-semibold mb-6 text-sage">
+          {user ? getGreeting() : 'Welcome to CerebroSync'}
+        </h1>
+        
+        {user ? (
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2 mb-6" 
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        ) : (
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2 mb-6"
+            onClick={() => navigate('/auth')}
+          >
+            <LogIn className="h-4 w-4" />
+            Login
+          </Button>
+        )}
+      </div>
       
       <MoodTracker />
       

@@ -6,11 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { generateChatResponse, generateAudioFromText } from '@/services/ChatService';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
-  id: number;
+  id: number | string;
   text: string;
-  sender: 'user' | 'bot';
+  sender: 'user' | 'assistant';
   timestamp: Date;
   audioUrl?: string;
 }
@@ -37,27 +39,93 @@ const ChatPage: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
+
+  // Load chat history from database
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true });
+          
+        if (error) {
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          const formattedMessages: Message[] = data.map(msg => ({
+            id: msg.id,
+            text: msg.content,
+            sender: msg.role === 'user' ? 'user' : 'assistant',
+            timestamp: new Date(msg.created_at),
+          }));
+          
+          setMessages([...INITIAL_MESSAGES, ...formattedMessages]);
+        }
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load chat history',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadChatHistory();
+  }, [user, toast]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const saveMessageToDatabase = async (message: Omit<Message, 'id'>) => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert({
+          user_id: user.id,
+          role: message.sender === 'user' ? 'user' : 'assistant',
+          content: message.text,
+          created_at: message.timestamp.toISOString(),
+        })
+        .select();
+        
+      if (error) throw error;
+      return data[0].id;
+    } catch (error) {
+      console.error('Error saving message:', error);
+      return null;
+    }
+  };
+
   const sendMessage = async (text: string = input) => {
     if (!text.trim()) return;
     
     // Add user message
-    const userMessage: Message = {
-      id: messages.length + 1,
+    const userMessage: Omit<Message, 'id'> = {
       text,
       sender: 'user',
       timestamp: new Date(),
     };
     
-    setMessages((prev) => [...prev, userMessage]);
+    const userMessageId = await saveMessageToDatabase(userMessage);
+    
+    setMessages((prev) => [...prev, { ...userMessage, id: userMessageId || Date.now() }]);
     setInput('');
     
     // Simulate bot typing
@@ -73,15 +141,16 @@ const ChatPage: React.FC = () => {
         audioUrl = await generateAudioFromText(responseText);
       }
       
-      const botMessage: Message = {
-        id: messages.length + 2,
+      const botMessage: Omit<Message, 'id'> = {
         text: responseText,
-        sender: 'bot',
+        sender: 'assistant',
         timestamp: new Date(),
         audioUrl
       };
       
-      setMessages((prev) => [...prev, botMessage]);
+      const botMessageId = await saveMessageToDatabase(botMessage);
+      
+      setMessages((prev) => [...prev, { ...botMessage, id: botMessageId || Date.now() }]);
       
       // Automatically play audio if enabled
       if (isAudioEnabled && audioUrl) {
@@ -121,6 +190,14 @@ const ChatPage: React.FC = () => {
   const formatTime = (date: Date): string => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sage"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto h-[calc(100vh-13rem)]">
@@ -162,7 +239,7 @@ const ChatPage: React.FC = () => {
                 <p className="mb-1">{message.text}</p>
                 <div className="flex justify-between items-center">
                   <p className="text-xs opacity-70">{formatTime(message.timestamp)}</p>
-                  {message.sender === 'bot' && message.audioUrl && (
+                  {message.sender === 'assistant' && message.audioUrl && (
                     <Button 
                       variant="ghost" 
                       size="sm" 

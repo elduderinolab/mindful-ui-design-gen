@@ -1,32 +1,20 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Save, Download, Plus, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
 
 interface JournalEntry {
-  id: number;
+  id: string | number;
   date: Date;
   content: string;
   mood: string;
 }
-
-const SAMPLE_ENTRIES: JournalEntry[] = [
-  {
-    id: 1,
-    date: new Date(Date.now() - 86400000), // Yesterday
-    content: "I had a productive day today. Classes went well, but I felt a bit anxious about the upcoming exam.",
-    mood: "Neutral"
-  },
-  {
-    id: 2,
-    date: new Date(Date.now() - 172800000), // 2 days ago
-    content: "Today was challenging. I struggled to focus and felt overwhelmed by assignments.",
-    mood: "Anxious"
-  }
-];
 
 const PROMPTS = [
   "What made you smile today?",
@@ -37,13 +25,77 @@ const PROMPTS = [
 ];
 
 const JournalPage: React.FC = () => {
-  const [entries, setEntries] = useState<JournalEntry[]>(SAMPLE_ENTRIES);
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [currentEntry, setCurrentEntry] = useState('');
   const [selectedPrompt, setSelectedPrompt] = useState('');
   const [selectedMood, setSelectedMood] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const handleSave = () => {
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchJournalEntries = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('journal_entries')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false });
+          
+        if (error) throw error;
+        
+        if (data) {
+          const formattedEntries: JournalEntry[] = data.map(entry => ({
+            id: entry.id,
+            date: new Date(entry.date),
+            content: entry.content,
+            mood: entry.mood || 'Unspecified'
+          }));
+          
+          setEntries(formattedEntries);
+        }
+      } catch (error) {
+        console.error('Error loading journal entries:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load journal entries',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    // Create journal_entries table if it doesn't exist yet
+    const createJournalTable = async () => {
+      try {
+        // Check if the table exists by trying to select from it
+        const { error } = await supabase
+          .from('journal_entries')
+          .select('id')
+          .limit(1);
+          
+        // If there's an error (table doesn't exist), create it using SQL
+        if (error) {
+          const { error: sqlError } = await supabase.rpc('create_journal_entries_table');
+          if (sqlError) throw sqlError;
+        }
+        
+        fetchJournalEntries();
+      } catch (error) {
+        console.error('Error checking/creating journal table:', error);
+        setIsLoading(false);
+      }
+    };
+    
+    createJournalTable();
+  }, [user, toast]);
+
+  const handleSave = async () => {
+    if (!user) return;
+    
     if (!currentEntry.trim()) {
       toast({
         title: "Entry empty",
@@ -54,21 +106,42 @@ const JournalPage: React.FC = () => {
     }
 
     const newEntry: JournalEntry = {
-      id: Date.now(),
+      id: uuidv4(),
       date: new Date(),
       content: currentEntry,
       mood: selectedMood || 'Unspecified'
     };
 
-    setEntries([newEntry, ...entries]);
-    setCurrentEntry('');
-    setSelectedPrompt('');
-    setSelectedMood('');
+    try {
+      const { error } = await supabase
+        .from('journal_entries')
+        .insert({
+          id: newEntry.id,
+          user_id: user.id,
+          date: newEntry.date.toISOString(),
+          content: newEntry.content,
+          mood: newEntry.mood
+        });
+        
+      if (error) throw error;
+      
+      setEntries([newEntry, ...entries]);
+      setCurrentEntry('');
+      setSelectedPrompt('');
+      setSelectedMood('');
 
-    toast({
-      title: "Journal Entry Saved",
-      description: "Your thoughts have been recorded.",
-    });
+      toast({
+        title: "Journal Entry Saved",
+        description: "Your thoughts have been recorded.",
+      });
+    } catch (error) {
+      console.error('Error saving journal entry:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save journal entry',
+        variant: 'destructive',
+      });
+    }
   };
 
   const formatDate = (date: Date): string => {
@@ -83,6 +156,14 @@ const JournalPage: React.FC = () => {
     setSelectedPrompt(prompt);
     setCurrentEntry(currentEntry ? currentEntry + '\n\n' + prompt + '\n' : prompt + '\n');
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sage"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto">
