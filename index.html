@@ -6,20 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CerebroSync - Mental Health Support for Students</title>
     <meta name="description" content="A calming, user-friendly mental health support app for students with chatbot, breathing exercises, journaling, and peer support." />
-    <meta name="author" content="Lovable" />
-
-    <meta property="og:title" content="CerebroSync - Mental Health Support for Students" />
-    <meta property="og:description" content="A calming, user-friendly mental health support app for students with chatbot, breathing exercises, journaling, and peer support." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <!-- Preload React to ensure it's available -->
+    <link rel="modulepreload" href="/node_modules/react/index.js" />
+    <link rel="modulepreload" href="/node_modules/react-dom/index.js" />
   </head>
-
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Initial static content -->
+      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: system-ui, sans-serif;">
+        <div style="text-align: center;">
+          <h2 style="color: #88B7A8;">CerebroSync</h2>
+          <p>Loading...</p>
+        </div>
+      </div>
+    </div>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

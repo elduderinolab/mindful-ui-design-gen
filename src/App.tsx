@@ -1,40 +1,20 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Layout from "./components/layout/Layout";
-import HomePage from "./pages/HomePage";
-import ChatPage from "./pages/ChatPage";
-import BreathingPage from "./pages/BreathingPage";
-import JournalPage from "./pages/JournalPage";
-import ForumPage from "./pages/ForumPage";
-import HealthLogPage from "./pages/HealthLogPage";
-import NotFound from "./pages/NotFound";
+import React from 'react';
 
-const queryClient = new QueryClient();
+console.log('App.tsx loaded');
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/breathing" element={<BreathingPage />} />
-            <Route path="/journal" element={<JournalPage />} />
-            <Route path="/forum" element={<ForumPage />} />
-            <Route path="/health-log" element={<HealthLogPage />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+// The simplest possible component
+const App = () => {
+  console.log('App component rendering');
+  
+  return (
+    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+      <h1 style={{ color: '#4a9', marginBottom: '10px' }}>CerebroSync</h1>
+      <p>Initializing application...</p>
+    </div>
+  );
+};
 
+// Export as both default and named export
+export { App };
 export default App;
