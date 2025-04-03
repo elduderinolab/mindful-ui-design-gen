@@ -10,6 +10,7 @@ import ChatPage from "./pages/ChatPage";
 import BreathingPage from "./pages/BreathingPage";
 import JournalPage from "./pages/JournalPage";
 import ForumPage from "./pages/ForumPage";
+import HealthLogPage from "./pages/HealthLogPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/breathing" element={<BreathingPage />} />
             <Route path="/journal" element={<JournalPage />} />
             <Route path="/forum" element={<ForumPage />} />
+            <Route path="/health-log" element={<HealthLogPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
