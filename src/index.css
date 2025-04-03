@@ -100,11 +100,11 @@
   }
   
   .card-mental {
-    @apply bg-white dark:bg-charcoal bg-opacity-90 dark:bg-opacity-60 rounded-2xl shadow-soft p-4 transition-all duration-300;
+    @apply bg-white dark:bg-charcoal bg-opacity-90 dark:bg-opacity-60 rounded-2xl shadow-soft p-3 md:p-4 transition-all duration-300;
   }
 
   .chat-bubble {
-    @apply rounded-2xl p-3 max-w-[85%];
+    @apply rounded-2xl p-2 md:p-3 max-w-[85%];
   }
 
   .chat-bubble-user {
@@ -113,5 +113,15 @@
 
   .chat-bubble-bot {
     @apply bg-gradient-to-br from-lavender/80 to-lavender/95 text-white mr-auto;
+  }
+
+  /* Animation for crisis button */
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out forwards;
   }
 }

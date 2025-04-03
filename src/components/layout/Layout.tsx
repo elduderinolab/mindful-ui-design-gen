@@ -26,6 +26,39 @@ const Layout: React.FC = () => {
     document.documentElement.classList.toggle('dark');
   };
 
+  // Close sidebar on mobile when clicking outside
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768 && sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    };
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const sidebar = document.getElementById('sidebar');
+      const menuButton = document.getElementById('menu-button');
+      
+      if (
+        sidebar && 
+        !sidebar.contains(event.target as Node) && 
+        menuButton && 
+        !menuButton.contains(event.target as Node) &&
+        window.innerWidth < 768 && 
+        sidebarOpen
+      ) {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [sidebarOpen]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background transition-colors duration-300">
       <Header 
@@ -34,9 +67,9 @@ const Layout: React.FC = () => {
         isDarkMode={isDarkMode}
       />
       <div className="flex flex-1">
-        <Sidebar isOpen={sidebarOpen} />
+        <Sidebar id="sidebar" isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
         <main 
-          className={`flex-1 transition-all duration-300 p-4 ${
+          className={`flex-1 transition-all duration-300 p-3 md:p-4 ${
             sidebarOpen ? 'md:ml-64' : 'md:ml-16'
           }`}
         >

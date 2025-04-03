@@ -7,8 +7,10 @@ import {
   Users, 
   BookOpen, 
   Wind, 
-  Settings
+  Settings,
+  X
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const navItems = [
   { path: '/', label: 'Home', icon: <HeartPulse className="h-5 w-5" /> },
@@ -21,27 +23,40 @@ const navItems = [
 
 interface SidebarProps {
   isOpen: boolean;
+  toggleSidebar?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   return (
     <aside 
       className={`fixed left-0 top-0 h-full bg-white dark:bg-charcoal shadow-md transition-all duration-300 z-20 pt-16 ${
         isOpen ? 'w-64' : 'w-0 -translate-x-full md:translate-x-0 md:w-16'
       }`}
     >
+      {isOpen && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-2 top-2 md:hidden"
+          onClick={toggleSidebar}
+        >
+          <X className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+          <span className="sr-only">Close Menu</span>
+        </Button>
+      )}
       <nav className="flex flex-col gap-1 p-3">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) => `
-              flex items-center gap-3 py-3 px-3 rounded-lg transition-all
+              flex items-center gap-3 py-2 md:py-3 px-3 rounded-lg transition-all text-sm md:text-base
               ${isActive 
                 ? 'bg-sage text-white' 
                 : 'text-gray-600 dark:text-gray-300 hover:bg-sage/10'}
               ${!isOpen && 'justify-center'}
             `}
+            onClick={isOpen && window.innerWidth < 768 ? toggleSidebar : undefined}
           >
             {item.icon}
             {isOpen && <span className="font-medium">{item.label}</span>}
